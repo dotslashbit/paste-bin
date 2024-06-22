@@ -1,8 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
+
+	"dev.dotslashbit.paste-bin/internal/data"
 )
 
 // This is used to create a new snippet
@@ -18,5 +22,16 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Display a specific snippet with ID %s...", id)
+	snippet := data.Snippet{
+		Id:       id,
+		Title:    "An old silent pond",
+		Content:  "An old silent pond...",
+		ExpireAt: time.Now().Add(5 * time.Minute),
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"snippet": snippet}, nil)
+	if err != nil {
+		errors.New("error writing JSON response")
+	}
+
 }
