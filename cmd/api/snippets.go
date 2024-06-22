@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -18,7 +17,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil || id == "" {
-		http.NotFound(w, r)
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -31,7 +30,7 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"snippet": snippet}, nil)
 	if err != nil {
-		errors.New("error writing JSON response")
+		app.serverErrorResponse(w, r, err)
 	}
 
 }
