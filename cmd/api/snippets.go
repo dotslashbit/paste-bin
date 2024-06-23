@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
+	"dev.dotslashbit.paste-bin/internal/validator"
 )
 
 // This is used to create a new snippet
@@ -20,6 +21,18 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		app.badRequestResponse(w, r, err)
 		return
 	}
+
+	snippet := &data.Snippet{
+		Title:   input.Title,
+		Content: input.Content,
+	}
+
+	v := validator.New()
+	if data.ValidateSnippet(v, snippet); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
 	fmt.Fprintf(w, "%+v\n", input)
 }
 
