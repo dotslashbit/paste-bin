@@ -10,7 +10,17 @@ import (
 
 // This is used to create a new snippet
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Create a new snippet...")
+	var input struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	fmt.Fprintf(w, "%+v\n", input)
 }
 
 // This is used to display a specific snippet based on the ID (string)
