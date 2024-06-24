@@ -103,10 +103,10 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	var input struct {
-		Title     string `json:"title"`
-		Content   string `json:"content"`
-		Format    string `json:"format"`
-		ExpiresAt string `json:"expires_at"`
+		Title     *string `json:"title"`
+		Content   *string `json:"content"`
+		Format    *string `json:"format"`
+		ExpiresAt *string `json:"expires_at"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -115,16 +115,26 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	expiresAtTime, err := app.ParseExpiresAt(input.ExpiresAt)
-	if err != nil {
-		app.failedValidationResponse(w, r, map[string]string{"expires_at": "must be in the format YYYY-MM-DD"})
-		return
+	if input.Title != nil {
+		snippet.Title = *input.Title
 	}
 
-	snippet.Title = input.Title
-	snippet.Content = input.Content
-	snippet.Format = input.Format
-	snippet.ExpiresAt = expiresAtTime.Format(time.RFC3339)
+	if input.Content != nil {
+		snippet.Content = *input.Content
+	}
+
+	if input.Format != nil {
+		snippet.Format = *input.Format
+	}
+
+	if input.ExpiresAt != nil {
+		expiresAtTime, err := app.ParseExpiresAt(*input.ExpiresAt)
+		if err != nil {
+			app.failedValidationResponse(w, r, map[string]string{"expires_at": "must be in the format YYYY-MM-DD"})
+			return
+		}
+		snippet.ExpiresAt = expiresAtTime.Format(time.RFC3339)
+	}
 
 	v := validator.New()
 	if data.ValidateSnippet(v, snippet); !v.Valid() {

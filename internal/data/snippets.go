@@ -1,8 +1,10 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"dev.dotslashbit.paste-bin/internal/validator"
 )
@@ -36,7 +38,9 @@ func (m SnippetModel) Insert(snippet *Snippet) error {
             RETURNING id, format, expires_at
         `
 	args := []interface{}{snippet.Title, snippet.Content, snippet.Format, snippet.ExpiresAt}
-	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return m.DB.QueryRowContext(ctx, query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
 }
 
 func (m SnippetModel) Get(id int) (*Snippet, error) {
@@ -68,7 +72,10 @@ func (m SnippetModel) Update(snippet *Snippet) error {
         RETURNING id, format, expires_at
     `
 	args := []interface{}{snippet.Title, snippet.Content, snippet.Format, snippet.ExpiresAt, snippet.Id}
-	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return m.DB.QueryRowContext(ctx, query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
 }
 
 func (m SnippetModel) Delete(id int) error {
@@ -76,7 +83,9 @@ func (m SnippetModel) Delete(id int) error {
 		DELETE FROM snippets
 		WHERE id = $1
 		`
-	result, err := m.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	result, err := m.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
