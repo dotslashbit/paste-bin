@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
 	"dev.dotslashbit.paste-bin/internal/validator"
@@ -11,8 +12,9 @@ import (
 // This is used to create a new snippet
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
+		Title     string `json:"title"`
+		Content   string `json:"content"`
+		ExpiresAt string `json:"expires_at"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -21,9 +23,17 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	expiresAtTime, err := app.ParseExpiresAt(input.ExpiresAt)
+
+	if err != nil {
+		app.failedValidationResponse(w, r, map[string]string{"expires_at": "must be in the format YYYY-MM-DD"})
+		return
+	}
+
 	snippet := &data.Snippet{
-		Title:   input.Title,
-		Content: input.Content,
+		Title:     input.Title,
+		Content:   input.Content,
+		ExpiresAt: expiresAtTime.Format(time.RFC3339),
 	}
 
 	v := validator.New()
@@ -91,8 +101,9 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
+		Title     string `json:"title"`
+		Content   string `json:"content"`
+		ExpiresAt string `json:"expires_at"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -101,8 +112,15 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	expiresAtTime, err := app.ParseExpiresAt(input.ExpiresAt)
+	if err != nil {
+		app.failedValidationResponse(w, r, map[string]string{"expires_at": "must be in the format YYYY-MM-DD"})
+		return
+	}
+
 	snippet.Title = input.Title
 	snippet.Content = input.Content
+	snippet.ExpiresAt = expiresAtTime.Format(time.RFC3339)
 
 	v := validator.New()
 	if data.ValidateSnippet(v, snippet); !v.Valid() {

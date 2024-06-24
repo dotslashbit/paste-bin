@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -81,4 +82,13 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		return errors.New("request body must only contain a single JSON value")
 	}
 	return nil
+}
+
+func (app *application) ParseExpiresAt(expiresAtStr string) (time.Time, error) {
+	// Parse the string into a time.Time value
+	expiresAt, err := time.Parse(time.RFC3339, expiresAtStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return expiresAt, nil
 }
