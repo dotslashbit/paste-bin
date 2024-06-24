@@ -24,6 +24,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 
 	snippet := &data.Snippet{
 		Title:   input.Title,
+		Code:    "random code",
 		Content: input.Content,
 	}
 
@@ -38,14 +39,15 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 
 // This is used to display a specific snippet based on the ID (string)
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r)
-	if err != nil || id == "" {
+	code, err := app.readIDParam(r)
+	if err != nil || code == "" {
 		app.notFoundResponse(w, r)
 		return
 	}
 
 	snippet := data.Snippet{
-		Id:       id,
+		Id:       1,
+		Code:     code,
 		Title:    "An old silent pond",
 		Content:  "An old silent pond...",
 		ExpireAt: time.Now().Add(5 * time.Minute),

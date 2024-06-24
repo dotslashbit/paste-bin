@@ -7,7 +7,8 @@ import (
 )
 
 type Snippet struct {
-	Id       string    `json:"id"`
+	Id       int       `json:"id"`
+	Code     string    `json:"code"`
 	Title    string    `json:"title"`
 	Content  string    `json:"content"`
 	ExpireAt time.Time `json:"expire_at"`
