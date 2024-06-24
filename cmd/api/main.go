@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
+	"dev.dotslashbit.paste-bin/internal/jsonlog"
 	_ "github.com/lib/pq"
 )
 
@@ -32,7 +32,7 @@ type config struct {
 // This is the application struct that will be used to store the configuration and logger and dependencies
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
 }
 
@@ -50,16 +50,16 @@ func main() {
 	flag.Parse()
 
 	// This is used to create a new logger instance
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 
 	defer db.Close()
 
-	logger.Printf("database connection pool established")
+	logger.PrintInfo("database connection pool established", nil)
 
 	// This is used to create a new application instance
 	app := &application{
@@ -77,14 +77,12 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	// This is used to log the server start
-	logger.Printf("Starting %s server on %s", cfg.env, srv.Addr)
-
-	// This is used to start the server
+	logger.PrintInfo("Starting server", map[string]string{
+		"addr": srv.Addr,
+		"env":  cfg.env,
+	})
 	err = srv.ListenAndServe()
-
-	// This is used to log any errors that occur when starting the server
-	logger.Fatal(err)
+	logger.PrintFatal(err, nil)
 
 }
 
