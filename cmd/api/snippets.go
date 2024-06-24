@@ -14,6 +14,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Title     string `json:"title"`
 		Content   string `json:"content"`
+		Format    string `json:"format"`
 		ExpiresAt string `json:"expires_at"`
 	}
 
@@ -33,6 +34,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	snippet := &data.Snippet{
 		Title:     input.Title,
 		Content:   input.Content,
+		Format:    input.Format,
 		ExpiresAt: expiresAtTime.Format(time.RFC3339),
 	}
 
@@ -103,6 +105,7 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 	var input struct {
 		Title     string `json:"title"`
 		Content   string `json:"content"`
+		Format    string `json:"format"`
 		ExpiresAt string `json:"expires_at"`
 	}
 
@@ -120,6 +123,7 @@ func (app *application) updateSnippetHandler(w http.ResponseWriter, r *http.Requ
 
 	snippet.Title = input.Title
 	snippet.Content = input.Content
+	snippet.Format = input.Format
 	snippet.ExpiresAt = expiresAtTime.Format(time.RFC3339)
 
 	v := validator.New()

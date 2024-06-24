@@ -11,6 +11,7 @@ type Snippet struct {
 	Id        int    `json:"id"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
+	Format    string `json:"format"`
 	ExpiresAt string `json:"expires_at"`
 }
 
@@ -19,6 +20,7 @@ func ValidateSnippet(v *validator.Validator, snippet *Snippet) {
 	v.Check(len(snippet.Title) <= 500, "title", "must not be more than 500 bytes long")
 	v.Check(snippet.Content != "", "content", "must be provided")
 	v.Check(snippet.ExpiresAt != "", "expires_at", "must be provided")
+	v.Check(snippet.Format != "", "format", "must be provided")
 
 }
 
@@ -29,23 +31,23 @@ type SnippetModel struct {
 func (m SnippetModel) Insert(snippet *Snippet) error {
 	query :=
 		`
-            INSERT INTO snippets (title, content, expires_at)
-            VALUES($1, $2, $3)
-            RETURNING id, expires_at
+            INSERT INTO snippets (title, content, format, expires_at)
+            VALUES($1, $2, $3, $4)
+            RETURNING id, format, expires_at
         `
-	args := []interface{}{snippet.Title, snippet.Content, snippet.ExpiresAt}
-	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.ExpiresAt)
+	args := []interface{}{snippet.Title, snippet.Content, snippet.Format, snippet.ExpiresAt}
+	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
 }
 
 func (m SnippetModel) Get(id int) (*Snippet, error) {
 	query :=
 		`
-			SELECT id, title, content, expires_at
+			SELECT id, title, content, format, expires_at
 			FROM snippets
 			WHERE expires_at > now() AND id = $1
 			`
 	var snippet Snippet
-	err := m.DB.QueryRow(query, id).Scan(&snippet.Id, &snippet.Title, &snippet.Content, &snippet.ExpiresAt)
+	err := m.DB.QueryRow(query, id).Scan(&snippet.Id, &snippet.Title, &snippet.Content, &snippet.Format, &snippet.ExpiresAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -61,12 +63,12 @@ func (m SnippetModel) Get(id int) (*Snippet, error) {
 func (m SnippetModel) Update(snippet *Snippet) error {
 	query := `
         UPDATE snippets
-        SET title = $1, content = $2, expires_at = $3
-        WHERE id = $4
-        RETURNING id, expires_at
+        SET title = $1, content = $2, format = $3, expires_at = $4
+        WHERE id = $5
+        RETURNING id, format, expires_at
     `
-	args := []interface{}{snippet.Title, snippet.Content, snippet.ExpiresAt, snippet.Id}
-	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.ExpiresAt)
+	args := []interface{}{snippet.Title, snippet.Content, snippet.Format, snippet.ExpiresAt, snippet.Id}
+	return m.DB.QueryRow(query, args...).Scan(&snippet.Id, &snippet.Format, &snippet.ExpiresAt)
 }
 
 func (m SnippetModel) Delete(id int) error {
