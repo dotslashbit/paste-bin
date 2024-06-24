@@ -19,5 +19,5 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/snippets/:id", app.updateSnippetHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/snippets/:id", app.deleteSnippetHandler)
 
-	return app.recoverPanic(router)
+	return app.recoverPanic(app.rateLimit(router))
 }
