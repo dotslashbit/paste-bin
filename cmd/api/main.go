@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"dev.dotslashbit.paste-bin/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -32,6 +33,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -63,6 +65,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	// This is used to create a new http server

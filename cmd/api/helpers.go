@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
@@ -15,9 +16,12 @@ import (
 type envelope map[string]interface{}
 
 // This is used to read the ID parameter from the URL
-func (app *application) readIDParam(r *http.Request) (string, error) {
+func (app *application) readIDParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("id")
+	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, fmt.Errorf("invalid ID parameter")
+	}
 
 	return id, nil
 }
