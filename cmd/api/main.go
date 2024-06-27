@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"flag"
 	"os"
+	"strings"
 	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
@@ -30,6 +31,9 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	cors struct {
+		trustedOrigins []string
+	}
 }
 
 // This is the application struct that will be used to store the configuration and logger and dependencies
@@ -53,6 +57,11 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+	})
 
 	flag.Parse()
 
