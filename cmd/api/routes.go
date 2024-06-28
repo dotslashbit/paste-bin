@@ -13,11 +13,12 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/snippets/:id", app.showSnippet)
-	router.HandlerFunc(http.MethodPost, "/v1/snippets", app.createSnippet)
-	router.HandlerFunc(http.MethodPatch, "/v1/snippets/:id", app.updateSnippetHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/snippets/:id", app.deleteSnippetHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.requireActivatedUser(app.healthcheckHandler))
+	// router.HandlerFunc(http.MethodGet, "/v1/snippets", app.requirePermission("snippets:read", app.listMoviesHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/snippets", app.requirePermission("snippets:write", app.createSnippet))
+	router.HandlerFunc(http.MethodGet, "/v1/snippets/:id", app.requirePermission("snippets:read", app.showSnippet))
+	router.HandlerFunc(http.MethodPatch, "/v1/snippets/:id", app.requirePermission("snippets:write", app.updateSnippetHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/snippets/:id", app.requirePermission("snippets:write", app.deleteSnippetHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
