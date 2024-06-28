@@ -6,10 +6,12 @@ import (
 	"flag"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
 	"dev.dotslashbit.paste-bin/internal/jsonlog"
+	"dev.dotslashbit.paste-bin/internal/mailer"
 	_ "github.com/lib/pq"
 )
 
@@ -34,6 +36,13 @@ type config struct {
 	cors struct {
 		trustedOrigins []string
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // This is the application struct that will be used to store the configuration and logger and dependencies
@@ -41,6 +50,8 @@ type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -57,6 +68,12 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "e41a6e239117ac", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "7c42cf783bd130", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Pastebin <no-reply@pastebin.introvertedbot.dev>", "SMTP sender")
 
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.cors.trustedOrigins = strings.Fields(val)
@@ -82,6 +99,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	err = app.serve()
