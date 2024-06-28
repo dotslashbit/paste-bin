@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"dev.dotslashbit.paste-bin/internal/data"
 	"dev.dotslashbit.paste-bin/internal/validator"
@@ -52,8 +53,19 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	app.background(func() {
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+		data := map[string]interface{}{
+			"activationToken": token.Plaintext,
+			"userID":          user.ID,
+		}
+
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
 			app.logger.PrintError(err, nil)
 		}
@@ -63,5 +75,61 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 
+	}
+}
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse the plaintext activation token from the request body
+	var input struct {
+		TokenPlaintext string `json:"token"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Validate the plaintext token provided by the client.
+	v := validator.New()
+	if data.ValidateTokenPlaintext(v, input.TokenPlaintext); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// Retrieve the details of the user associated with the token using the GetForToken() method.
+	// If no matching record is found, then we let the client know that the token they provided
+	// is not valid.
+	user, err := app.models.Users.GetForToken(data.ScopeActivation, input.TokenPlaintext)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			v.AddError("token", "invalid or expired activation token")
+			app.failedValidationResponse(w, r, v.Errors)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// Update the user's activation status.
+	user.Activated = true
+
+	// Save the updated user record in our database.
+	err = app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// If everything went successfully above, then delete all activation tokens for the user.
+	err = app.models.Tokens.DeleteAllForUser(data.ScopeActivation, user.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 	}
 }
